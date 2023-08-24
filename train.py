@@ -20,10 +20,11 @@ from configs import ModelConfigs
 import os
 from tqdm import tqdm
 
-# Must download and extract datasets manually from https://fki.tic.heia-fr.ch/databases/download-the-iam-handwriting-database to Datasets\IAM_Sentences
+#this section will prepare the dataset so that it will use the annotation folder we received and link each file to its annotation so we can easily see which data to keep and which to discard 
 sentences_txt_path = os.path.join("Datasets", "IAM_Sentences", "ascii", "sentences.txt")
 sentences_folder_path = os.path.join("Datasets", "IAM_Sentences", "sentences")
 
+#this here opens the txt file and reads each line, checks if the line says err, meaning error, it will skip that line 
 dataset, vocab, max_len = [], set(), 0
 words = open(sentences_txt_path, "r").readlines()
 for line in tqdm(words):
@@ -59,7 +60,7 @@ configs.vocab = "".join(vocab)
 configs.max_text_length = max_len
 configs.save()
 
-# Create a data provider for the dataset
+# Create a data provider for the dataset - making sure the data is all processed same way
 data_provider = DataProvider(
     dataset=dataset,
     skip_validation=True,
@@ -69,13 +70,17 @@ data_provider = DataProvider(
         ImageResizer(configs.width, configs.height, keep_aspect_ratio=True),
         LabelIndexer(configs.vocab),
         LabelPadding(max_word_length=configs.max_text_length, padding_value=len(configs.vocab)),
+        ImageShowCV2(),
         ],
 )
+
+for _ in data_provider:
+    pass
 
 # Split the dataset into training and validation sets
 train_data_provider, val_data_provider = data_provider.split(split = 0.9)
 
-# Augment training data with random brightness, rotation and erode/dilate
+# Augment training data with random brightness, rotation and erode/dilate we are altering the quality of some picures so that is harder or easier to read certain things 
 train_data_provider.augmentors = [
     RandomBrightness(), 
     RandomErodeDilate(),
